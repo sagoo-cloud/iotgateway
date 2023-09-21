@@ -99,7 +99,7 @@ func (g *gateway) heartbeat(ctx context.Context, duration time.Duration) {
 			data := gconv.Map(builder.Build())
 			outData := gjson.New(data).MustToJson()
 			topic := fmt.Sprintf(propertyTopic, vars.GatewayInfo.ProductKey, vars.GatewayInfo.DeviceKey)
-			log.Println("---------网关向平台发送心跳数据-------：", outData)
+			log.Println("---------网关向平台发送心跳数据-------：", data)
 			log.Println("---------topic-------：", topic)
 			err := g.MQTTClient.Publish(topic, 1, false, outData)
 			if err != nil {

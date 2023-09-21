@@ -6,6 +6,7 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/gogf/gf/v2 v2.5.4
 	github.com/gookit/event v1.1.1
+	github.com/sinfere/bkv-go v0.0.0-20201007073055-0d1696eb5a18
 	golang.org/x/text v0.13.0
 )
 

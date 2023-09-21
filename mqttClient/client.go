@@ -13,6 +13,7 @@ import (
 	"github.com/sagoo-cloud/iotgateway/model"
 	"github.com/sagoo-cloud/iotgateway/mqttProtocol"
 	"github.com/sagoo-cloud/iotgateway/vars"
+	"log"
 	"strings"
 	"sync"
 )
@@ -29,13 +30,11 @@ var (
 
 // GetMQTTClient 获取MQTT客户端单例
 func GetMQTTClient(cf conf.MqttConfig) (mqttClient mqtt.Client, err error) {
+	log.Println("==============config:", cf)
+
 	singleInstanceLock.Lock()
 	defer singleInstanceLock.Unlock()
 
-	var ctx context.Context
-	ctx, cancel = context.WithCancel(context.Background())
-
-	go heartbeat(ctx, cf.Duration)
 	// 如果客户端已存在且已连接，直接返回现有客户端
 	if client != nil && client.IsConnected() {
 		return client, nil
@@ -65,7 +64,7 @@ func Publish(topic string, payload []byte) (err error) {
 
 // PublishData  向mqtt服务推送属性数据
 func PublishData(deviceKey string, payload []byte) (err error) {
-	gateWayProductKey := vars.Gateway.ProductKey
+	gateWayProductKey := vars.GatewayInfo.ProductKey
 	topic := fmt.Sprintf(propertyTopic, gateWayProductKey, deviceKey)
 	g.Log().Debugf(context.Background(), "属性上报，topic: %s", topic)
 	err = Publish(topic, payload)

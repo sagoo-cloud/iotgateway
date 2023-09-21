@@ -1,25 +1,23 @@
 package conf
 
 import (
-	"github.com/sagoo-cloud/iotgateway/mqttProtocol"
 	"time"
 )
 
 type GatewayConfig struct {
-	Server   ServerConfig `json:"server"`
-	Mqtt     MqttConfig   `json:"mqtt"`
-	Protocol mqttProtocol.Protocol
+	Server     ServerConfig `json:"server"`
+	MqttConfig MqttConfig   `json:"mqtt"`
 }
 
 type ServerConfig struct {
-	Addr         string `json:"addr"`         // 网关服务地址
-	Duration     int    `json:"duration"`     // 网关服务心跳时长
-	ProductKey   string `json:"productKey"`   // 网关产品标识
-	DeviceKey    string `json:"deviceKey"`    // 网关实例标识
-	DeviceName   string `json:"deviceName"`   // 网关系统名称
-	Description  string `json:"description"`  // 网关系统描述
-	DeviceType   string `json:"deviceType"`   // 网关系统类型
-	Manufacturer string `json:"manufacturer"` // 网关系统厂商
+	Addr         string        `json:"addr"`         // 网关服务地址
+	Duration     time.Duration `json:"duration"`     // 网关服务心跳时长
+	ProductKey   string        `json:"productKey"`   // 网关产品标识
+	DeviceKey    string        `json:"deviceKey"`    // 网关实例标识
+	DeviceName   string        `json:"deviceName"`   // 网关系统名称
+	Description  string        `json:"description"`  // 网关系统描述
+	DeviceType   string        `json:"deviceType"`   // 网关系统类型
+	Manufacturer string        `json:"manufacturer"` // 网关系统厂商
 }
 
 type MqttConfig struct {

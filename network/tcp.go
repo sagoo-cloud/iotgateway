@@ -15,7 +15,7 @@ type TcpServer struct {
 	connections  map[net.Conn]struct{} // 连接列表
 	mu           sync.RWMutex          // 互斥锁
 	ctx          context.Context       // 上下文
-	shutdownChan chan struct{}         // 用于通知服务器关闭的通道
+	ShutdownChan chan struct{}         // 用于通知服务器关闭的通道
 }
 
 // NewServer 创建新的 Server 对象
@@ -26,7 +26,7 @@ func NewServer(addr string) *TcpServer {
 		dispatcher:   &EventDispatcher{listeners: make(map[EventType]EventListeners)},
 		connections:  make(map[net.Conn]struct{}),
 		ctx:          context.Background(),
-		shutdownChan: make(chan struct{}),
+		ShutdownChan: make(chan struct{}),
 	}
 
 	// 注册事件监听器
@@ -111,7 +111,7 @@ func StartServer(ctx context.Context, addr string, protocol mqttProtocol.Protoco
 	server.Start(ctx, protocol)
 	// 接收退出信号然后关闭服务器
 	select {
-	case <-server.shutdownChan:
+	case <-server.ShutdownChan:
 		fmt.Print("Shutting down ", addr)
 	case <-ctx.Done():
 		fmt.Print("Context Done ", addr)

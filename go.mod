@@ -4,16 +4,15 @@ go 1.20
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.4.3
+	github.com/fatih/color v1.15.0
 	github.com/gogf/gf/v2 v2.5.4
 	github.com/gookit/event v1.1.1
-	github.com/sinfere/bkv-go v0.0.0-20201007073055-0d1696eb5a18
 	golang.org/x/text v0.13.0
 )
 
 require (
 	github.com/BurntSushi/toml v1.2.0 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
-	github.com/fatih/color v1.15.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

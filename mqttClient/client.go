@@ -4,16 +4,15 @@ import (
 	"context"
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gookit/event"
 	"github.com/sagoo-cloud/iotgateway/conf"
 	"github.com/sagoo-cloud/iotgateway/lib"
+	"github.com/sagoo-cloud/iotgateway/log"
 	"github.com/sagoo-cloud/iotgateway/model"
 	"github.com/sagoo-cloud/iotgateway/mqttProtocol"
 	"github.com/sagoo-cloud/iotgateway/vars"
-	"log"
 	"strings"
 	"sync"
 )
@@ -28,9 +27,15 @@ var (
 	cancel context.CancelFunc
 )
 
+func init() {
+	var ctx context.Context
+	ctx, cancel = context.WithCancel(context.Background())
+	go heartbeat(ctx, vars.GatewayServerConfig.Duration)
+}
+
 // GetMQTTClient 获取MQTT客户端单例
 func GetMQTTClient(cf conf.MqttConfig) (mqttClient mqtt.Client, err error) {
-	log.Println("==============config:", cf)
+	log.Debug("==============config:", cf)
 
 	singleInstanceLock.Lock()
 	defer singleInstanceLock.Unlock()
@@ -64,12 +69,12 @@ func Publish(topic string, payload []byte) (err error) {
 
 // PublishData  向mqtt服务推送属性数据
 func PublishData(deviceKey string, payload []byte) (err error) {
-	gateWayProductKey := vars.GatewayInfo.ProductKey
+	gateWayProductKey := vars.GatewayServerConfig.ProductKey
 	topic := fmt.Sprintf(propertyTopic, gateWayProductKey, deviceKey)
-	g.Log().Debugf(context.Background(), "属性上报，topic: %s", topic)
+	log.Debug("属性上报，topic: %s", topic)
 	err = Publish(topic, payload)
 	if err != nil {
-		g.Log().Errorf(context.Background(), "publish error: %s", err.Error())
+		log.Error("publish error: %s", err.Error())
 		return
 	}
 	return
@@ -78,14 +83,14 @@ func PublishData(deviceKey string, payload []byte) (err error) {
 // SubscribeEvent  订阅平台的服务调用
 func SubscribeEvent(deviceKey string) {
 	if client == nil || !client.IsConnected() {
-		fmt.Println("Client has lost connection with the MQTT broker.")
+		log.Debug("Client has lost connection with the MQTT broker.")
 		return
 	}
 	topic := fmt.Sprintf(serviceTopic, deviceKey)
-	g.Log().Debugf(context.Background(), "topic: %s", topic)
+	log.Debug("topic: %s", topic)
 	token := client.Subscribe(topic, 1, onMessage)
 	if token.Error() != nil {
-		g.Log().Debugf(context.Background(), "subscribe error: %s", token.Error())
+		log.Debug("subscribe error: %s", token.Error())
 	}
 }
 
@@ -98,12 +103,12 @@ var onMessage mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 		//通过监听到的topic地址获取设备标识
 		deviceKey := lib.GetTopicInfo("deviceKey", msg.Topic())
 		var data = mqttProtocol.ServiceCallRequest{}
-		g.Log().Debug(context.Background(), "==111==收到服务下发的topic====", msg.Topic())
-		g.Log().Debug(context.Background(), "====收到服务下发的信息====", msg.Payload())
+		log.Debug("==111==收到服务下发的topic====", msg.Topic())
+		log.Debug("====收到服务下发的信息====", msg.Payload())
 
 		err := gconv.Scan(msg.Payload(), &data)
 		if err != nil {
-			g.Log().Debugf(context.Background(), "解析服务功能数据出错： %s", err.Error())
+			log.Debug("解析服务功能数据出错： %s", err.Error())
 			return
 		}
 
@@ -118,7 +123,7 @@ var onMessage mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 		up.Topic = msg.Topic()
 		vars.UpdateUpMessageMap(deviceKey, up)
 		ra, ee := vars.GetUpMessageMap(deviceKey)
-		g.Log().Debug(context.Background(), "==222===MessageHandler===========", ra, ee)
+		log.Debug("==222===MessageHandler===========", ra, ee)
 		event.MustFire(method[2], data.Params)
 	}
 }

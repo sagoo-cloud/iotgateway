@@ -7,7 +7,7 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/sagoo-cloud/iotgateway/conf"
 	"github.com/sagoo-cloud/iotgateway/lib"
-	"log"
+	"github.com/sagoo-cloud/iotgateway/log"
 	"os"
 	"time"
 )
@@ -42,7 +42,7 @@ func getMqttClientConfig(cf conf.MqttConfig) (connOpts *mqtt.ClientOptions, err 
 	connOpts.SetConnectRetryInterval(time.Second * 5)
 
 	connOpts.OnReconnecting = func(c mqtt.Client, o *mqtt.ClientOptions) {
-		log.Println("尝试重新连接mqtt服务中...")
+		log.Debug("尝试重新连接mqtt服务中...")
 		c.Connect()
 	}
 
@@ -51,12 +51,12 @@ func getMqttClientConfig(cf conf.MqttConfig) (connOpts *mqtt.ClientOptions, err 
 
 // connectHandler 连接成功回调
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-	log.Println("连接MQTT服务成功")
+	log.Debug("连接MQTT服务成功")
 }
 
 // connectLostHandler 连接断开回调
 var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
-	log.Println("MQTT服务连接已断开 %v\n", err)
+	log.Debug("MQTT服务连接已断开 %v\n", err)
 }
 
 // NewTlsConfig 生成tls配置
@@ -64,7 +64,7 @@ func NewTlsConfig(clientCertificateKey, clientCertificateCert string) *tls.Confi
 	certPool := x509.NewCertPool()
 	ca, err := os.ReadFile("ca.pem")
 	if err != nil {
-		log.Fatalln(err.Error())
+		log.Error(err.Error())
 	}
 	certPool.AppendCertsFromPEM(ca)
 	if clientCertificateKey != "" && clientCertificateCert != "" {

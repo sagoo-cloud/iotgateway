@@ -5,11 +5,11 @@ import (
 )
 
 type GatewayConfig struct {
-	Server     ServerConfig `json:"server"`
-	MqttConfig MqttConfig   `json:"mqtt"`
+	GatewayServerConfig GatewayServerConfig `json:"server"`
+	MqttConfig          MqttConfig          `json:"mqtt"`
 }
 
-type ServerConfig struct {
+type GatewayServerConfig struct {
 	Addr         string        `json:"addr"`         // 网关服务地址
 	Duration     time.Duration `json:"duration"`     // 网关服务心跳时长
 	ProductKey   string        `json:"productKey"`   // 网关产品标识

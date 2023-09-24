@@ -27,12 +27,6 @@ var (
 	cancel context.CancelFunc
 )
 
-func init() {
-	var ctx context.Context
-	ctx, cancel = context.WithCancel(context.Background())
-	go heartbeat(ctx, vars.GatewayServerConfig.Duration)
-}
-
 // GetMQTTClient 获取MQTT客户端单例
 func GetMQTTClient(cf conf.MqttConfig) (mqttClient mqtt.Client, err error) {
 	log.Debug("==============config:", cf)

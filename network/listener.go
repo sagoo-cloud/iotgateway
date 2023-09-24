@@ -20,7 +20,8 @@ func (l *DataReceivedListener) OnEvent(event *Event) {
 	// 解包
 	pgResData, err := event.Protocol.Decode(event.Conn, event.Data)
 	if err != nil {
-		log.Error("数据解包出错:", err.Error())
+		//	fmt.Printf("接收到数据: %x\n", event.Data)
+		//	log.Error("通过协议解析数据出错: %s", err.Error())
 		return
 	}
 

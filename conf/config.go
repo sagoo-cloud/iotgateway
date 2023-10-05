@@ -11,6 +11,9 @@ type GatewayConfig struct {
 
 type GatewayServerConfig struct {
 	Addr         string        `json:"addr"`         // 网关服务地址
+	NetType      string        `json:"netType"`      // 网关服务类型
+	SerUpTopic   string        `json:"serUpTopic"`   // 服务上行Topic
+	SerDownTopic string        `json:"serDownTopic"` // 服务下行Topic
 	Duration     time.Duration `json:"duration"`     // 网关服务心跳时长
 	ProductKey   string        `json:"productKey"`   // 网关产品标识
 	DeviceKey    string        `json:"deviceKey"`    // 网关实例标识

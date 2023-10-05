@@ -9,6 +9,7 @@ import (
 	"github.com/gogf/gf/v2/util/guid"
 	"github.com/gookit/event"
 	"github.com/sagoo-cloud/iotgateway/conf"
+	"github.com/sagoo-cloud/iotgateway/consts"
 	"github.com/sagoo-cloud/iotgateway/lib"
 	"github.com/sagoo-cloud/iotgateway/log"
 	"github.com/sagoo-cloud/iotgateway/model"
@@ -42,7 +43,9 @@ var ServerGateway *gateway
 
 func NewGateway(options *conf.GatewayConfig, protocol mqttProtocol.Protocol) (g *gateway, err error) {
 	mqttClient, err := mqttClient.GetMQTTClient(options.MqttConfig) //初始化mqtt客户端
-	tcpServer := network.NewServer(options.GatewayServerConfig.Addr)
+	if options.GatewayServerConfig.NetType == "" {
+		options.GatewayServerConfig.NetType = consts.NetTypeTcpServer
+	}
 	vars.GatewayServerConfig = options.GatewayServerConfig
 	if err != nil {
 		log.Debug("mqttClient.GetMQTTClient error:", err)
@@ -51,7 +54,7 @@ func NewGateway(options *conf.GatewayConfig, protocol mqttProtocol.Protocol) (g 
 		options:    options,
 		Address:    options.GatewayServerConfig.Addr,
 		MQTTClient: mqttClient, // will be set later
-		Server:     tcpServer,
+		Server:     nil,
 		Protocol:   protocol,
 	}
 	g.ctx, g.cancel = context.WithCancel(context.Background())
@@ -61,8 +64,19 @@ func NewGateway(options *conf.GatewayConfig, protocol mqttProtocol.Protocol) (g 
 }
 func (g *gateway) Start() {
 	go g.heartbeat(g.options.GatewayServerConfig.Duration) //启动心跳
-	log.Info("TCPServer started listening on %s", g.Address)
-	g.Server.Start(g.ctx, g.Protocol)
+	switch g.options.GatewayServerConfig.NetType {
+	case consts.NetTypeTcpServer:
+		//启动tcp类型的设备网关服务
+		log.Info("TCPServer started listening on %s", g.Address)
+		g.Server = network.NewServer(g.options.GatewayServerConfig.Addr)
+		g.Server.Start(g.ctx, g.Protocol)
+	case consts.NetTypeMqttServer:
+		//启动mqtt类型的设备网关服务
+		log.Info("MQTTGatewayServer started listening %s", "......")
+		g.SubscribeDeviceUpData()
+		select {}
+	}
+
 	return
 }
 
@@ -141,6 +155,47 @@ func (g *gateway) heartbeat(duration time.Duration) {
 			if token.Error() != nil {
 				log.Error("publish error: %s", token.Error())
 			}
+		}
+	}
+}
+
+// SubscribeDeviceUpData 在mqtt网络类型的设备情况下，订阅设备上传数据
+func (g *gateway) SubscribeDeviceUpData() {
+	if g.MQTTClient == nil || !g.MQTTClient.IsConnected() {
+		log.Error("Client has lost connection with the MQTT broker.")
+		return
+	}
+	log.Debug("订阅设备上传数据topic: ", g.options.GatewayServerConfig.SerUpTopic)
+	if g.options.GatewayServerConfig.SerUpTopic != "" {
+		token := g.MQTTClient.Subscribe(g.options.GatewayServerConfig.SerUpTopic, 1, onDeviceUpDataMessage)
+		if token.Error() != nil {
+			log.Debug("subscribe error: ", token.Error())
+		}
+	}
+
+}
+
+// onDeviceUpDataMessage 设备上传数据
+var onDeviceUpDataMessage mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
+	//忽略_reply结尾的topic
+	if strings.HasSuffix(msg.Topic(), "_reply") {
+		return
+	}
+	if msg != nil {
+		ServerGateway.Protocol.Decode(nil, msg.Payload())
+	}
+}
+
+// DeviceDownData 在mqtt网络类型的设备情况下，向设备下发数据
+func (g *gateway) DeviceDownData(data interface{}) {
+	if g.MQTTClient == nil || !g.MQTTClient.IsConnected() {
+		log.Error("Client has lost connection with the MQTT broker.")
+		return
+	}
+	if g.options.GatewayServerConfig.SerDownTopic != "" {
+		token := g.MQTTClient.Publish(g.options.GatewayServerConfig.SerDownTopic, 1, false, data)
+		if token.Error() != nil {
+			log.Error("publish error: %s", token.Error())
 		}
 	}
 }

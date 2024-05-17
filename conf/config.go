@@ -10,6 +10,7 @@ type GatewayConfig struct {
 }
 
 type GatewayServerConfig struct {
+	Name         string        `json:"name"`         // 网关服务名称,启动时显示
 	Addr         string        `json:"addr"`         // 网关服务地址
 	NetType      string        `json:"netType"`      // 网关服务类型
 	SerUpTopic   string        `json:"serUpTopic"`   // 服务上行Topic

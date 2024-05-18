@@ -34,8 +34,8 @@ func pushAttributeDataToMQTT(e event.Event) (err error) {
 		for k, v := range propertieDataLIst {
 			var param = mqttProtocol.PropertyNode{}
 			switch v.(type) {
-			case int, int32, int64,
-				uint, uint16, uint64,
+			case int, int16, int32, int64,
+				uint, uint16, uint32, uint64,
 				float32, float64,
 				bool, string:
 				param.Value = v

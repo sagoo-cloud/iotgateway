@@ -5,11 +5,14 @@ import (
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gogf/gf/v2/encoding/gjson"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/glog"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gogf/gf/v2/util/guid"
+	"github.com/gookit/event"
 	"github.com/sagoo-cloud/iotgateway/conf"
 	"github.com/sagoo-cloud/iotgateway/consts"
+	"github.com/sagoo-cloud/iotgateway/events"
 	"github.com/sagoo-cloud/iotgateway/log"
 	"github.com/sagoo-cloud/iotgateway/mqttClient"
 	"github.com/sagoo-cloud/iotgateway/mqttProtocol"
@@ -40,7 +43,21 @@ type gateway struct {
 
 var ServerGateway *gateway
 
-func NewGateway(options *conf.GatewayConfig, protocol mqttProtocol.Protocol) (gw *gateway, err error) {
+func NewGateway(ctx context.Context, protocol mqttProtocol.Protocol) (gw *gateway, err error) {
+
+	//读取配置文件
+	options := new(conf.GatewayConfig)
+	confData, err := g.Cfg().Data(ctx)
+	if err != nil {
+		glog.Debug(context.Background(), "读取配置文件失败", err)
+		return
+	}
+	err = gconv.Scan(confData, options)
+	if err != nil {
+		glog.Error(ctx, "读取配置文件失败", err)
+		return
+	}
+
 	client, err := mqttClient.GetMQTTClient(options.MqttConfig) //初始化mqtt客户端
 	if err != nil {
 		log.Debug("mqttClient.GetMQTTClient error:", err)
@@ -59,6 +76,16 @@ func NewGateway(options *conf.GatewayConfig, protocol mqttProtocol.Protocol) (gw
 	}
 	gw.ctx, gw.cancel = context.WithCancel(context.Background())
 	defer gw.cancel()
+
+	//初始化事件
+	defer func() {
+		err := event.CloseWait()
+		if err != nil {
+			glog.Debugf(context.Background(), "event.CloseWait() error: %s", err.Error())
+		}
+	}()
+	events.LoadingPublishEvent() //加载发布事件
+
 	ServerGateway = gw
 	return
 }

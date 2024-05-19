@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-// SubscribeEvent  订阅平台的服务调用，需要在有新设备接入时调用
+// SubscribeServiceEvent  订阅平台的服务调用，需要在有新设备接入时调用
 func (gw *gateway) SubscribeServiceEvent(deviceKey string) {
 	if gw.MQTTClient == nil || !gw.MQTTClient.IsConnected() {
 		log.Error("Client has lost connection with the MQTT broker.")
@@ -35,6 +35,11 @@ var onServiceMessage mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Mes
 		return
 	}
 	if msg != nil {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("Recovered in safeCall:", r)
+			}
+		}()
 		//通过监听到的topic地址获取设备标识
 		deviceKey := lib.GetTopicInfo("deviceKey", msg.Topic())
 		var data = mqttProtocol.ServiceCallRequest{}

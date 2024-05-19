@@ -33,6 +33,11 @@ func (gw *gateway) SubscribeSetEvent(deviceKey string) {
 // onSetMessage 属性设置调用处理
 var onSetMessage mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	if msg != nil {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("Recovered in safeCall:", r)
+			}
+		}()
 		ctx := context.Background()
 		//通过监听到的topic地址获取设备标识
 		deviceKey := lib.GetTopicInfo("deviceKey", msg.Topic())

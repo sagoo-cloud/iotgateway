@@ -1,9 +1,11 @@
 package events
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/gogf/gf/v2/encoding/gjson"
+	"github.com/gogf/gf/v2/os/glog"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gogf/gf/v2/util/guid"
@@ -17,8 +19,12 @@ import (
 
 // LoadingPublishEvent 加载发布事件
 func LoadingPublishEvent() {
+	//推送属性数据到mqtt服务事件
 	event.On(consts.PushAttributeDataToMQTT, event.ListenerFunc(pushAttributeDataToMQTT), event.Normal)
+	//推送服务调用响应数据到mqtt服务事件
 	event.On(consts.PushServiceResDataToMQTT, event.ListenerFunc(pushServiceResDataToMQTT), event.High)
+	//推送设置属性响应数据到mqtt服务事件
+	event.On(consts.PushSetResDataToMQTT, event.ListenerFunc(pushSetResDataToMQTT), event.High)
 }
 
 // pushAttributeDataToMQTT 推送属性数据到mqtt服务
@@ -118,6 +124,47 @@ func pushServiceResDataToMQTT(e event.Event) (err error) {
 			log.Debug("发送服务回调响应失败：", err.Error())
 		} else {
 			log.Debug("发送服务回调响应成功")
+		}
+	}
+	return
+}
+
+// pushSetResDataToMQTT 推送属性设置响应数据到mqtt服务
+func pushSetResDataToMQTT(e event.Event) (err error) {
+	deviceKey := gconv.String(e.Data()["DeviceKey"])
+	replyData := e.Data()["ReplyData"]
+	replyDataMap := make(map[string]interface{})
+	if replyData != nil {
+		replyDataMap = gconv.Map(replyData)
+	}
+
+	msg, err := vars.GetUpMessageMap(deviceKey)
+	if msg.MessageID != "" && err == nil {
+		glog.Debug(context.Background(), "==5555==监听回复信息====", msg)
+		mqData := mqttProtocol.ServiceCallOutputRes{}
+		mqData.Id = msg.MessageID
+		mqData.Code = 200
+		mqData.Message = "success"
+		mqData.Version = "1.0"
+		mqData.Data = replyDataMap
+
+		//推送数据到mqtt
+		topic := msg.Topic + "_reply"
+
+		glog.Debug(context.Background(), "设备Key：%v，推送【属性设置应答数据】到MQTT服务：%v", deviceKey, mqData)
+		outData, err := json.Marshal(mqData)
+		if err != nil {
+			log.Debug("属性设置响应序列化失败：", err.Error())
+			return err
+		}
+
+		log.Debug("属性设置响应：", mqData)
+		log.Debug("属性设置响应topic：", topic)
+		err = mqttClient.Publish(topic, outData)
+		if err != nil {
+			log.Debug("属性设置响应失败：", err.Error())
+		} else {
+			log.Debug("属性设置响应成功")
 		}
 	}
 	return

@@ -71,3 +71,12 @@ func RandString(n int) string {
 	rand.Read(b)
 	return fmt.Sprintf("%x", b)
 }
+
+// GetMapValueForKey
+// 从指定的map中获取指定的值，它接受一个map和一个要检查的key
+// 如果key存在，则返回true和对应的值
+// 如果key不存在，则返回false和nil
+func GetMapValueForKey(myMap map[string]any, key string) (bool, any) {
+	value, ok := myMap[key]
+	return ok, value
+}

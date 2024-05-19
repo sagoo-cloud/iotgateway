@@ -4,10 +4,7 @@ import (
 	"context"
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/gogf/gf/v2/os/glog"
 	"github.com/sagoo-cloud/iotgateway/conf"
-	"github.com/sagoo-cloud/iotgateway/log"
-	"github.com/sagoo-cloud/iotgateway/vars"
 	"sync"
 )
 
@@ -23,8 +20,6 @@ var (
 
 // GetMQTTClient 获取MQTT客户端单例
 func GetMQTTClient(cf conf.MqttConfig) (mqttClient mqtt.Client, err error) {
-	log.Debug("==============config:", cf)
-
 	singleInstanceLock.Lock()
 	defer singleInstanceLock.Unlock()
 
@@ -53,17 +48,4 @@ func Publish(topic string, payload []byte) (err error) {
 	}
 	pubToken := client.Publish(topic, 1, false, payload)
 	return pubToken.Error()
-}
-
-// PublishData  向mqtt服务推送属性数据
-func PublishData(deviceKey string, payload []byte) (err error) {
-	gateWayProductKey := vars.GatewayServerConfig.ProductKey
-	topic := fmt.Sprintf(propertyTopic, gateWayProductKey, deviceKey)
-	glog.Debug(context.Background(), "属性上报，topic: %s", topic, string(payload))
-	err = Publish(topic, payload)
-	if err != nil {
-		log.Error("publish error: %s", err.Error())
-		return
-	}
-	return
 }

@@ -8,12 +8,9 @@ import (
 	"github.com/gogf/gf/v2/os/glog"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gogf/gf/v2/util/guid"
-	"github.com/gookit/event"
 	"github.com/sagoo-cloud/iotgateway/conf"
 	"github.com/sagoo-cloud/iotgateway/consts"
-	"github.com/sagoo-cloud/iotgateway/lib"
 	"github.com/sagoo-cloud/iotgateway/log"
-	"github.com/sagoo-cloud/iotgateway/model"
 	"github.com/sagoo-cloud/iotgateway/mqttClient"
 	"github.com/sagoo-cloud/iotgateway/mqttProtocol"
 	"github.com/sagoo-cloud/iotgateway/network"
@@ -26,6 +23,7 @@ import (
 const (
 	propertyTopic = "/sys/%s/%s/thing/event/property/pack/post"
 	serviceTopic  = "/sys/+/%s/thing/service/#"
+	setTopic      = "/sys/+/%s/thing/service/property/set"
 )
 
 type gateway struct {
@@ -85,54 +83,6 @@ func (gw *gateway) Start() {
 	}
 
 	return
-}
-
-// SubscribeEvent  订阅平台的服务调用
-func (gw *gateway) SubscribeEvent(deviceKey string) {
-	if gw.MQTTClient == nil || !gw.MQTTClient.IsConnected() {
-		log.Error("Client has lost connection with the MQTT broker.")
-		return
-	}
-	topic := fmt.Sprintf(serviceTopic, deviceKey)
-	log.Debug("topic: ", topic)
-	token := gw.MQTTClient.Subscribe(topic, 1, onMessage)
-	if token.Error() != nil {
-		log.Debug("subscribe error: ", token.Error())
-	}
-}
-
-var onMessage mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	//忽略_reply结尾的topic
-	if strings.HasSuffix(msg.Topic(), "_reply") {
-		return
-	}
-	if msg != nil {
-		//通过监听到的topic地址获取设备标识
-		deviceKey := lib.GetTopicInfo("deviceKey", msg.Topic())
-		var data = mqttProtocol.ServiceCallRequest{}
-		log.Debug("==111==收到服务下发的topic====", msg.Topic())
-		log.Debug("====收到服务下发的信息====", msg.Payload())
-
-		err := gconv.Scan(msg.Payload(), &data)
-		if err != nil {
-			log.Debug("解析服务功能数据出错： %s", err)
-			return
-		}
-
-		//触发下发事件
-		data.Params["DeviceKey"] = deviceKey
-
-		method := strings.Split(data.Method, ".")
-		var up model.UpMessage
-		up.MessageID = data.Id
-		up.SendTime = time.Now().UnixNano() / 1e9
-		up.MethodName = method[2]
-		up.Topic = msg.Topic()
-		vars.UpdateUpMessageMap(deviceKey, up)
-		ra, ee := vars.GetUpMessageMap(deviceKey)
-		log.Debug("==222===MessageHandler===========", ra, ee)
-		event.MustFire(method[2], data.Params)
-	}
 }
 
 // heartbeat 网关服务心跳

@@ -17,8 +17,8 @@ type TcpServer struct {
 	ctx         context.Context       // 上下文
 }
 
-// NewServer 创建新的 Server 对象
-func NewServer(addr string) *TcpServer {
+// NewTcpServer 创建新的 Server 对象
+func NewTcpServer(addr string) *TcpServer {
 	// 创建服务
 	server := &TcpServer{
 		addr:        addr,

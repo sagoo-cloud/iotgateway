@@ -76,7 +76,7 @@ func pushAttributeDataToMQTT(e event.Event) (err error) {
 	builder := mqttProtocol.NewGatewayBatchReqBuilder()
 	builder.SetId(guid.S()).SetVersion("1.0")
 	builder.AddSubDevice(subDevice)
-	builder.SetMethod("hing.event.property.pack.post")
+	builder.SetMethod("thing.event.property.pack.post")
 	builder.Build()
 	data := gconv.Map(builder.Build())
 	outData := gjson.New(data).MustToJson()

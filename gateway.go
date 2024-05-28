@@ -99,7 +99,7 @@ func (gw *gateway) Start() {
 	case consts.NetTypeTcpServer:
 		//启动tcp类型的设备网关服务
 		log.Info("%s started listening on %s", name, gw.Address)
-		gw.Server = network.NewServer(gw.options.GatewayServerConfig.Addr)
+		gw.Server = network.NewTcpServer(gw.options.GatewayServerConfig.Addr)
 		gw.Server.Start(gw.ctx, gw.Protocol)
 	case consts.NetTypeMqttServer:
 		//启动mqtt类型的设备网关服务

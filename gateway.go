@@ -118,31 +118,40 @@ func (gw *gateway) heartbeat(duration time.Duration) {
 		duration = 60
 	}
 	ticker := time.NewTicker(time.Second * duration)
-	//defer ticker.Stop()
+
+	// 立即发送一次心跳消息
+	gw.sendHeartbeat()
+
 	for {
 		select {
 		case <-ticker.C:
-			//设备数量
-			versionInfo := version.GetVersion()
-			if versionInfo == "" || versionInfo == "0.0" {
-				versionInfo = "v0.0.1"
-			}
-			count := vars.CountDevices()
-			builder := mqttProtocol.NewGatewayBatchReqBuilder().SetId(guid.S())
-			builder.SetVersion("1.0")
-			builder.AddProperty("Status", 0)
-			builder.AddProperty("Count", count)
-			builder.AddProperty("Version", versionInfo)
-			builder.SetMethod("thing.event.property.pack.post")
-			data := gconv.Map(builder.Build())
-			outData := gjson.New(data).MustToJson()
-			topic := fmt.Sprintf(propertyTopic, vars.GatewayServerConfig.ProductKey, vars.GatewayServerConfig.DeviceKey)
-			glog.Debugf(context.Background(), "网关向平台发送心跳数据：%s", string(outData))
-			token := gw.MQTTClient.Publish(topic, 1, false, outData)
-			if token.Error() != nil {
-				log.Error("publish error: %s", token.Error())
-			}
+			// 发送心跳消息
+			gw.sendHeartbeat()
 		}
+	}
+}
+
+// sendHeartbeat 发送心跳消息
+func (gw *gateway) sendHeartbeat() {
+	// 设备数量
+	versionInfo := version.GetVersion()
+	if versionInfo == "" || versionInfo == "0.0" {
+		versionInfo = "v0.0.1"
+	}
+	count := vars.CountDevices()
+	builder := mqttProtocol.NewGatewayBatchReqBuilder().SetId(guid.S())
+	builder.SetVersion("1.0")
+	builder.AddProperty("Status", 0)
+	builder.AddProperty("Count", count)
+	builder.AddProperty("Version", versionInfo)
+	builder.SetMethod("thing.event.property.pack.post")
+	data := gconv.Map(builder.Build())
+	outData := gjson.New(data).MustToJson()
+	topic := fmt.Sprintf(propertyTopic, vars.GatewayServerConfig.ProductKey, vars.GatewayServerConfig.DeviceKey)
+	glog.Debugf(context.Background(), "网关向平台发送心跳数据：%s", string(outData))
+	token := gw.MQTTClient.Publish(topic, 1, false, outData)
+	if token.Error() != nil {
+		log.Error("publish error: %s", token.Error())
 	}
 }
 

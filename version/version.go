@@ -4,10 +4,14 @@ import "fmt"
 
 var (
 	BuildVersion string
+	BuildTime    string
+	CommitID     string
 )
 
 func ShowLogo(buildVersion, buildTime, commitID string) {
 	BuildVersion = buildVersion
+	BuildTime = buildTime
+	CommitID = commitID
 
 	//版本号
 	//fmt.Println("   _____                         \n  / ____|                        \n | (___   __ _  __ _  ___   ___  \n  \\___ \\ / _` |/ _` |/ _ \\ / _ \\ \n  ____) | (_| | (_| | (_) | (_) |\n |_____/ \\__,_|\\__, |\\___/ \\___/ \n                __/ |            \n               |___/             ")
@@ -18,5 +22,14 @@ func ShowLogo(buildVersion, buildTime, commitID string) {
 	fmt.Println("")
 }
 func GetVersion() string {
+	if BuildVersion == "" {
+		BuildVersion = "0.0"
+	}
 	return BuildVersion
+}
+func GetBuildTime() string {
+	return BuildTime
+}
+func GetCommitID() string {
+	return CommitID
 }

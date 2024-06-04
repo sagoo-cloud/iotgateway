@@ -94,6 +94,10 @@ func (gw *gateway) Start() {
 	if name == "" {
 		name = "SagooIoT Gateway Server"
 	}
+
+	//订阅网关设备服务下发事件
+	gw.SubscribeServiceEvent(gw.options.GatewayServerConfig.DeviceKey)
+
 	go gw.heartbeat(gw.options.GatewayServerConfig.Duration) //启动心跳
 	switch gw.options.GatewayServerConfig.NetType {
 	case consts.NetTypeTcpServer:
@@ -151,7 +155,7 @@ func (gw *gateway) sendHeartbeat() {
 	glog.Debugf(context.Background(), "网关向平台发送心跳数据：%s", string(outData))
 	token := gw.MQTTClient.Publish(topic, 1, false, outData)
 	if token.Error() != nil {
-		log.Error("publish error: %s", token.Error())
+		glog.Errorf(context.Background(), "publish error: %s", token.Error())
 	}
 }
 

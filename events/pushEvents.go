@@ -4,17 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gogf/gf/v2/encoding/gjson"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/glog"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gogf/gf/v2/util/guid"
 	"github.com/gookit/event"
 	"github.com/sagoo-cloud/iotgateway/consts"
+	"github.com/sagoo-cloud/iotgateway/lib"
 	"github.com/sagoo-cloud/iotgateway/log"
 	"github.com/sagoo-cloud/iotgateway/mqttClient"
 	"github.com/sagoo-cloud/iotgateway/mqttProtocol"
 	"github.com/sagoo-cloud/iotgateway/vars"
+	"github.com/sagoo-cloud/iotgateway/version"
 )
 
 // LoadingPublishEvent 加载发布事件
@@ -25,6 +29,10 @@ func LoadingPublishEvent() {
 	event.On(consts.PushServiceResDataToMQTT, event.ListenerFunc(pushServiceResDataToMQTT), event.High)
 	//推送设置属性响应数据到mqtt服务事件
 	event.On(consts.PushSetResDataToMQTT, event.ListenerFunc(pushSetResDataToMQTT), event.High)
+
+	// 服务下发获取网关配置信息事件
+	event.On(GetGatewayVersionEvent, event.ListenerFunc(getGatewayVersionData), event.Normal)
+
 }
 
 // pushAttributeDataToMQTT 推送属性数据到mqtt服务
@@ -165,6 +173,34 @@ func pushSetResDataToMQTT(e event.Event) (err error) {
 			log.Debug("属性设置响应失败：", err.Error())
 		} else {
 			log.Debug("属性设置响应成功")
+		}
+	}
+	return
+}
+
+// getGatewayVersionData 获取网关版本信息事件
+func getGatewayVersionData(e event.Event) (err error) {
+	// 获取设备KEY
+	ok, deviceKey := lib.GetMapValueForKey(e.Data(), "DeviceKey")
+	if !ok {
+		glog.Debug(context.Background(), "获取设备KEY失败")
+		return fmt.Errorf("获取设备KEY失败: %s", e.Data())
+	}
+	//==== 平台端下发调用 应答====
+	ra, err := vars.GetUpMessageMap(deviceKey.(string))
+	if err == nil {
+		if ra.MessageID != "" {
+
+			var rd = make(map[string]interface{})
+			rd["Version"] = version.GetVersion()
+			rd["BuildTime"] = version.GetBuildTime()
+			rd["CommitID"] = version.CommitID
+
+			outData := g.Map{
+				"DeviceKey": deviceKey,
+				"ReplyData": rd,
+			}
+			event.Async(consts.PushServiceResDataToMQTT, outData)
 		}
 	}
 	return

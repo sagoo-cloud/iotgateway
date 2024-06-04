@@ -23,10 +23,10 @@ func (gw *gateway) SubscribeSetEvent(deviceKey string) {
 		return
 	}
 	topic := fmt.Sprintf(setTopic, deviceKey)
-	log.Debug("topic: ", topic)
+	glog.Debugf(context.Background(), "%s 设备订阅了属性设置监听topic: %s", deviceKey, topic)
 	token := gw.MQTTClient.Subscribe(topic, 1, onSetMessage)
 	if token.Error() != nil {
-		log.Debug("subscribe error: ", token.Error())
+		glog.Debug(context.Background(), "subscribe error: ", token.Error())
 	}
 }
 
@@ -42,8 +42,8 @@ var onSetMessage mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message
 		//通过监听到的topic地址获取设备标识
 		deviceKey := lib.GetTopicInfo("deviceKey", msg.Topic())
 		var data = mqttProtocol.ServiceCallRequest{}
-		glog.Debug(ctx, "==111==收到属性设置下发的topic====", msg.Topic())
-		glog.Debug(ctx, "====收到属性设置下发的信息====", msg.Payload())
+		glog.Debug(ctx, "接收到属性设置下发的topic：", msg.Topic())
+		glog.Debug(ctx, "接收收到属性设置下发的数据：", msg.Payload())
 
 		err := gconv.Scan(msg.Payload(), &data)
 		if err != nil {

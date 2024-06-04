@@ -1,8 +1,10 @@
 package iotgateway
 
 import (
+	"context"
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/gogf/gf/v2/os/glog"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gookit/event"
 	"github.com/sagoo-cloud/iotgateway/lib"
@@ -21,10 +23,10 @@ func (gw *gateway) SubscribeServiceEvent(deviceKey string) {
 		return
 	}
 	topic := fmt.Sprintf(serviceTopic, deviceKey)
-	log.Debug("topic: ", topic)
+	glog.Debugf(context.Background(), "%s 设备订阅了服务调用监听topic: %s", deviceKey, topic)
 	token := gw.MQTTClient.Subscribe(topic, 1, onServiceMessage)
 	if token.Error() != nil {
-		log.Debug("subscribe error: ", token.Error())
+		glog.Debug(context.Background(), "subscribe error: ", token.Error())
 	}
 }
 
@@ -43,12 +45,12 @@ var onServiceMessage mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Mes
 		//通过监听到的topic地址获取设备标识
 		deviceKey := lib.GetTopicInfo("deviceKey", msg.Topic())
 		var data = mqttProtocol.ServiceCallRequest{}
-		log.Debug("==111==收到服务下发的topic====", msg.Topic())
-		log.Debug("====收到服务下发的信息====", msg.Payload())
+		glog.Debug(context.Background(), "接收到服务下发的topic：", msg.Topic())
+		glog.Debug(context.Background(), "接收到服务下发的数据：", msg.Payload())
 
 		err := gconv.Scan(msg.Payload(), &data)
 		if err != nil {
-			log.Debug("解析服务功能数据出错： %s", err)
+			glog.Debug(context.Background(), "解析服务功能数据出错： %s", err)
 			return
 		}
 

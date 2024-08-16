@@ -29,13 +29,17 @@ func GetMQTTClient(cf conf.MqttConfig) (mqttClient mqtt.Client, err error) {
 	}
 	connOpts, err := getMqttClientConfig(cf)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get MQTT client config: %v", err)
 	}
 	// 创建连接
 	client = mqtt.NewClient(connOpts)
+	if client == nil {
+		return nil, fmt.Errorf("failed to create MQTT client")
+	}
 	// 建立连接
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		cancel()
+		// 提供详细的错误信息
+		return nil, fmt.Errorf("failed to connect to MQTT broker: %v", token.Error())
 	}
 	return client, nil
 }

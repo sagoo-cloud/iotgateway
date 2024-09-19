@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/sagoo-cloud/iotgateway/model"
 	"log"
 	"net"
 	"time"
@@ -63,18 +64,18 @@ func (s *UDPServer) Start(ctx context.Context, addr string) error {
 			}
 
 			clientID := remoteAddr.String()
-			device, _ := s.devices.LoadOrStore(clientID, &Device{ClientID: clientID, LastActive: time.Now()})
-			device.(*Device).LastActive = time.Now()
+			device, _ := s.devices.LoadOrStore(clientID, &model.Device{ClientID: clientID, LastActive: time.Now()})
+			device.(*model.Device).LastActive = time.Now()
 
 			data := buffer[:n]
-			resData, err := s.handleReceiveData(device.(*Device), data)
+			resData, err := s.handleReceiveData(device.(*model.Device), data)
 			if err != nil {
 				log.Printf("处理数据错误: %v\n", err)
 				continue
 			}
 
 			if resData != nil {
-				if err := s.SendData(device.(*Device), resData); err != nil {
+				if err := s.SendData(device.(*model.Device), resData); err != nil {
 					log.Printf("发送回复失败: %v\n", err)
 				}
 			}
@@ -91,7 +92,7 @@ func (s *UDPServer) Stop() error {
 }
 
 // SendData 向 UDP 设备发送数据
-func (s *UDPServer) SendData(device *Device, data interface{}, param ...string) error {
+func (s *UDPServer) SendData(device *model.Device, data interface{}, param ...string) error {
 	udpAddr, err := net.ResolveUDPAddr("udp", device.ClientID)
 	if err != nil {
 		return fmt.Errorf("解析 UDP 地址失败: %v", err)

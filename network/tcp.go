@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gogf/gf/v2/os/glog"
+	"github.com/sagoo-cloud/iotgateway/model"
 	"io"
 	"net"
 	"sync"
@@ -71,7 +72,7 @@ func (s *TCPServer) Stop() error {
 }
 
 // SendData 向 TCP 设备发送数据
-func (s *TCPServer) SendData(device *Device, data interface{}, param ...string) error {
+func (s *TCPServer) SendData(device *model.Device, data interface{}, param ...string) error {
 	connAny, ok := s.conns.Load(device.ClientID)
 	if !ok {
 		return fmt.Errorf("TCP 设备 %s 未找到", device.ClientID)
@@ -101,7 +102,7 @@ func (s *TCPServer) handleConnection(ctx context.Context, conn net.Conn) {
 	device := s.handleConnect(clientID, conn)
 	s.conns.Store(clientID, conn)
 	defer func() {
-		s.handleDisconnect(clientID)
+		s.handleDisconnect(device)
 		s.conns.Delete(clientID)
 	}()
 

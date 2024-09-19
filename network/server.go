@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/gogf/gf/v2/os/glog"
 	"github.com/sagoo-cloud/iotgateway/model"
+	"github.com/sagoo-cloud/iotgateway/vars"
 	"net"
 	"sync"
 	"time"
@@ -43,7 +44,7 @@ func NewBaseServer(options ...Option) *BaseServer {
 
 // handleConnect 处理设备上线事件
 func (s *BaseServer) handleConnect(clientID string, conn net.Conn) *model.Device {
-	device := &model.Device{ClientID: clientID, Conn: conn, LastActive: time.Now()}
+	device := &model.Device{ClientID: clientID, OnlineStatus: true, Conn: conn, LastActive: time.Now()}
 	s.devices.Store(clientID, device)
 	glog.Debugf(context.Background(), "设备 %s 上线\n", clientID)
 	return device
@@ -63,6 +64,7 @@ func (s *BaseServer) getDevice(clientID string) *model.Device {
 // handleDisconnect 处理设备离线事件
 func (s *BaseServer) handleDisconnect(device *model.Device) {
 	if _, ok := s.devices.LoadAndDelete(device.ClientID); ok {
+		device.OnlineStatus = false
 		glog.Debugf(context.Background(), "设备 %s 离线, %s\n", device.DeviceKey, device.ClientID)
 	}
 }
@@ -75,7 +77,8 @@ func (s *BaseServer) handleReceiveData(device *model.Device, data []byte) (resDa
 	s.protocolHandler.Init(device, data) // 初始化协议处理器
 	if device != nil {
 		device.OnlineStatus = true
-		device.LastActive = time.Now() // 更新设备最后活跃时间
+		device.LastActive = time.Now()                 // 更新设备最后活跃时间
+		vars.UpdateDeviceMap(device.DeviceKey, device) // 更新到全局设备列表
 	}
 	return s.protocolHandler.Decode(device, data) // 解码数据
 }

@@ -6,5 +6,6 @@ const (
 	PushSetResDataToMQTT     = "PushSetResDataToMQTT"     //属性设置结果上报
 
 	NetTypeTcpServer  = "tcp"
+	NetTypeUDPServer  = "udp"
 	NetTypeMqttServer = "mqtt"
 )

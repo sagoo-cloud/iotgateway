@@ -1,7 +1,7 @@
 server:
   name: "sagooiot-example"
   addr: ":8198" # 服务于服务监听地址，格式为: ":port"，支持tcp、udp两种网络协议
-  netType: "mqtt" # 网关系统类型，tcp,mqtt，这个是指这个网关处理设备端的是mqtt协议还是 tcp协议
+  netType: "mqtt" # 网关系统类型，tcp,udp,mqtt，这个是指这个网关处理设备端的是mqtt协议还是 tcp协议,udp协议
   duration: 20 # 网关服务心跳间隔，单位秒
   productKey: "sagoo-snmp202406"   # 网关产品标识，用于区分不同的网关产品
   deviceKey: "snmp20240605"   # 网关实例标识，用于区分不同的网关实例，每个部署的网关实例必须唯一，用于在平台上添加这个网关设备标识

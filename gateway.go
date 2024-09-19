@@ -29,21 +29,21 @@ const (
 	setTopic      = "/sys/+/%s/thing/service/property/set"
 )
 
-type gateway struct {
+type Gateway struct {
 	Address    string
 	Version    string
 	Status     string
 	ctx        context.Context // 上下文
 	options    *conf.GatewayConfig
 	MQTTClient mqtt.Client
-	Server     *network.TcpServer
-	Protocol   mqttProtocol.Protocol
+	Server     network.NetworkServer
+	Protocol   network.ProtocolHandler
 	cancel     context.CancelFunc
 }
 
-var ServerGateway *gateway
+var ServerGateway *Gateway
 
-func NewGateway(ctx context.Context, protocol mqttProtocol.Protocol) (gw *gateway, err error) {
+func NewGateway(ctx context.Context, protocol network.ProtocolHandler) (gw *Gateway, err error) {
 
 	//读取配置文件
 	options := new(conf.GatewayConfig)
@@ -67,7 +67,7 @@ func NewGateway(ctx context.Context, protocol mqttProtocol.Protocol) (gw *gatewa
 	}
 	vars.GatewayServerConfig = options.GatewayServerConfig
 
-	gw = &gateway{
+	gw = &Gateway{
 		options:    options,
 		Address:    options.GatewayServerConfig.Addr,
 		MQTTClient: client, // will be set later
@@ -89,11 +89,13 @@ func NewGateway(ctx context.Context, protocol mqttProtocol.Protocol) (gw *gatewa
 	ServerGateway = gw
 	return
 }
-func (gw *gateway) Start() {
+func (gw *Gateway) Start() {
 	name := gw.options.GatewayServerConfig.Name
 	if name == "" {
 		name = "SagooIoT Gateway Server"
 	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	//订阅网关设备服务下发事件
 	gw.SubscribeServiceEvent(gw.options.GatewayServerConfig.DeviceKey)
@@ -101,10 +103,31 @@ func (gw *gateway) Start() {
 	go gw.heartbeat(gw.options.GatewayServerConfig.Duration) //启动心跳
 	switch gw.options.GatewayServerConfig.NetType {
 	case consts.NetTypeTcpServer:
-		//启动tcp类型的设备网关服务
-		log.Info("%s started listening on %s", name, gw.Address)
-		gw.Server = network.NewTcpServer(gw.options.GatewayServerConfig.Addr)
-		gw.Server.Start(gw.ctx, gw.Protocol)
+		// 创建 TCP 服务器
+		gw.Server = network.NewTCPServer(
+			network.WithTimeout(1*time.Minute),
+			network.WithProtocolHandler(gw.Protocol),
+			network.WithCleanupInterval(5*time.Minute),
+			network.WithPacketHandling(network.PacketConfig{Type: network.Delimiter, Delimiter: "\r\n"}),
+		)
+		glog.Infof(ctx, "%s started Tcp listening on %v", name, gw.options.GatewayServerConfig.Addr)
+		// 启动 TCP 服务器
+		if err := gw.Server.Start(ctx, gw.options.GatewayServerConfig.Addr); err != nil {
+			log.Info("TCP 服务器错误: %v", err)
+		}
+
+	case consts.NetTypeUDPServer:
+		// 创建 UDP 服务器
+		gw.Server = network.NewUDPServer(
+			network.WithTimeout(1*time.Minute),
+			network.WithProtocolHandler(gw.Protocol),
+			network.WithCleanupInterval(5*time.Minute),
+		)
+		glog.Infof(ctx, "%s started UDP listening on %v", name, gw.options.GatewayServerConfig.Addr)
+		// 启动 UDP 服务器
+		if err := gw.Server.Start(ctx, gw.options.GatewayServerConfig.Addr); err != nil {
+			log.Info("UDP 服务器错误: %v", err)
+		}
 	case consts.NetTypeMqttServer:
 		//启动mqtt类型的设备网关服务
 		glog.Infof(context.Background(), "%s started listening ......", name)
@@ -117,7 +140,7 @@ func (gw *gateway) Start() {
 }
 
 // heartbeat 网关服务心跳
-func (gw *gateway) heartbeat(duration time.Duration) {
+func (gw *Gateway) heartbeat(duration time.Duration) {
 	if duration == 0 {
 		duration = 60
 	}
@@ -136,7 +159,7 @@ func (gw *gateway) heartbeat(duration time.Duration) {
 }
 
 // sendHeartbeat 发送心跳消息
-func (gw *gateway) sendHeartbeat() {
+func (gw *Gateway) sendHeartbeat() {
 	// 设备数量
 	versionInfo := version.GetVersion()
 	if versionInfo == "" || versionInfo == "0.0" {
@@ -160,7 +183,7 @@ func (gw *gateway) sendHeartbeat() {
 }
 
 // SubscribeDeviceUpData 在mqtt网络类型的设备情况下，订阅设备上传数据
-func (gw *gateway) SubscribeDeviceUpData() {
+func (gw *Gateway) SubscribeDeviceUpData() {
 	if gw.MQTTClient == nil || !gw.MQTTClient.IsConnected() {
 		log.Error("Client has lost connection with the MQTT broker.")
 		return
@@ -187,7 +210,7 @@ var onDeviceUpDataMessage mqtt.MessageHandler = func(client mqtt.Client, msg mqt
 }
 
 // DeviceDownData 在mqtt网络类型的设备情况下，向设备下发数据
-func (gw *gateway) DeviceDownData(data interface{}) {
+func (gw *Gateway) DeviceDownData(data interface{}) {
 	if gw.MQTTClient == nil || !gw.MQTTClient.IsConnected() {
 		log.Error("Client has lost connection with the MQTT broker.")
 		return

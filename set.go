@@ -17,7 +17,7 @@ import (
 )
 
 // SubscribeSetEvent  订阅平台的属性设置，需要在有新设备接入时调用
-func (gw *gateway) SubscribeSetEvent(deviceKey string) {
+func (gw *Gateway) SubscribeSetEvent(deviceKey string) {
 	if gw.MQTTClient == nil || !gw.MQTTClient.IsConnected() {
 		log.Error("Client has lost connection with the MQTT broker.")
 		return

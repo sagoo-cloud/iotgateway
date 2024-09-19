@@ -77,8 +77,10 @@ func (s *BaseServer) handleReceiveData(device *model.Device, data []byte) (resDa
 	s.protocolHandler.Init(device, data) // 初始化协议处理器
 	if device != nil {
 		device.OnlineStatus = true
-		device.LastActive = time.Now()                 // 更新设备最后活跃时间
-		vars.UpdateDeviceMap(device.DeviceKey, device) // 更新到全局设备列表
+		device.LastActive = time.Now() // 更新设备最后活跃时间
+		if device.DeviceKey != "" {
+			vars.UpdateDeviceMap(device.DeviceKey, device) // 更新到全局设备列表
+		}
 	}
 	return s.protocolHandler.Decode(device, data) // 解码数据
 }

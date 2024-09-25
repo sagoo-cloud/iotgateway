@@ -53,11 +53,16 @@ func pushAttributeDataToMQTT(e event.Event) (err error) {
 				float32, float64,
 				bool, string:
 				param.Value = v
+			case mqttProtocol.PropertyNode:
+				param.Value = v.(mqttProtocol.PropertyNode).Value
+				param.CreateTime = v.(mqttProtocol.PropertyNode).CreateTime
 			default:
 				param.Value = gconv.Map(v)
 			}
+			if param.CreateTime == 0 {
+				param.CreateTime = gtime.Timestamp()
+			}
 
-			param.CreateTime = gtime.Timestamp()
 			propertieData[k] = param
 		}
 	}

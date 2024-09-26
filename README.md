@@ -2,6 +2,8 @@
 
 开发SagooIOT专属网关时，可以引用此项目，以便快速开发。创建一个空的工程，按下面的步骤完成自己专属网关的开发。
 
+详细使用可以参考示例工程：[iotgateway-example](https://github.com/sagoo-cloud/iotgateway-example)
+
 
 ## SagooIOT的网关开发说明
 

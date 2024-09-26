@@ -73,8 +73,16 @@ func pushAttributeDataToMQTT(e event.Event) (err error) {
 		eventDataList := gconv.Map(e.Data()["EventDataList"])
 		for k, v := range eventDataList {
 			var param = mqttProtocol.EventNode{}
-			param.Value = gconv.Map(v)
-			param.CreateTime = gtime.Timestamp()
+			switch v.(type) {
+			case mqttProtocol.EventNode:
+				param.Value = v.(mqttProtocol.EventNode).Value
+				param.CreateTime = v.(mqttProtocol.PropertyNode).CreateTime
+			default:
+				param.Value = gconv.Map(v)
+			}
+			if param.CreateTime == 0 {
+				param.CreateTime = gtime.Timestamp()
+			}
 			eventsData[k] = param
 		}
 	}

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/sagoo-cloud/iotgateway/conf"
-	"github.com/sagoo-cloud/iotgateway/lib"
 	"github.com/sagoo-cloud/iotgateway/log"
 	"os"
 	"time"
@@ -23,11 +22,10 @@ func getMqttClientConfig(cf conf.MqttConfig) (connOpts *mqtt.ClientOptions, err 
 		return nil, fmt.Errorf("mqtt配置信息不完整")
 	}
 
-	clientId := fmt.Sprintf("%s_%s", cf.ClientId, lib.RandString(4))
 	connOpts = mqtt.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s", cf.Address))
 	connOpts.SetUsername(cf.Username)
 	connOpts.SetPassword(cf.Password)
-	connOpts.SetClientID(clientId)
+	connOpts.SetClientID(cf.ClientId)
 
 	if cf.ClientCertificateKey != "" {
 		connOpts.AddBroker(fmt.Sprintf("ssl://%s", cf.Address))

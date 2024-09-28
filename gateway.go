@@ -58,6 +58,7 @@ func NewGateway(ctx context.Context, protocol network.ProtocolHandler) (gw *Gate
 		return
 	}
 
+	options.MqttConfig.ClientId = options.GatewayServerConfig.DeviceKey
 	client, err := mqttClient.GetMQTTClient(options.MqttConfig) //初始化mqtt客户端
 	if err != nil {
 		log.Debug("mqttClient.GetMQTTClient error:", err)

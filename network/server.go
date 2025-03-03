@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/gogf/gf/v2/os/glog"
+	"github.com/sagoo-cloud/iotgateway/conf"
 	"github.com/sagoo-cloud/iotgateway/model"
 	"github.com/sagoo-cloud/iotgateway/vars"
 	"net"
@@ -24,7 +25,7 @@ type BaseServer struct {
 	timeout         time.Duration
 	protocolHandler ProtocolHandler
 	cleanupInterval time.Duration
-	packetConfig    PacketConfig
+	packetConfig    conf.PacketConfig
 }
 
 // NewBaseServer 创建一个新的基础服务器实例
@@ -32,7 +33,7 @@ func NewBaseServer(options ...Option) *BaseServer {
 	s := &BaseServer{
 		timeout:         30 * time.Second,
 		cleanupInterval: 5 * time.Minute,
-		packetConfig:    PacketConfig{Type: Delimiter, Delimiter: "\r\n"},
+		packetConfig:    conf.PacketConfig{Type: Delimiter, Delimiter: "\r\n"},
 	}
 
 	for _, option := range options {

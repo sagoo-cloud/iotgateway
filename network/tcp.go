@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/gogf/gf/v2/os/glog"
 	"github.com/sagoo-cloud/iotgateway/model"
+	"github.com/sagoo-cloud/iotgateway/vars"
 	"io"
 	"net"
 	"sync"
@@ -106,15 +107,9 @@ func (s *TCPServer) handleConnection(ctx context.Context, conn net.Conn) {
 		s.conns.Delete(clientID)
 	}()
 
-	var reader io.Reader = conn
-	switch s.packetConfig.Type {
-	case FixedLength:
-		reader = &io.LimitedReader{R: conn, N: int64(s.packetConfig.FixedLength)}
-	case HeaderBodySeparate:
-		reader = bufio.NewReader(conn)
-	case Delimiter:
-		reader = bufio.NewReader(conn)
-	}
+	// 创建缓冲读取器
+	var reader = bufio.NewReader(conn)
+	buffer := make([]byte, 1024) // 或其他适合的缓冲区大小
 
 	for {
 		select {
@@ -128,25 +123,52 @@ func (s *TCPServer) handleConnection(ctx context.Context, conn net.Conn) {
 				}
 			}
 
-			data, err := s.readPacket(reader)
+			var data []byte
+			// 直接读取数据
+			n, err := reader.Read(buffer)
 			if err != nil {
 				if err != io.EOF {
 					glog.Debugf(context.Background(), "读取错误: %v\n", err)
 				}
-				return
-			}
-
-			device.LastActive = time.Now()
-
-			resData, err := s.handleReceiveData(device, data)
-			if err != nil {
-				glog.Debugf(context.Background(), "处理数据错误: %v\n", err)
 				continue
 			}
+			data = buffer[:n]
+			fmt.Println(fmt.Sprintf("data: %x", data))
 
-			if resData != nil {
-				if err := s.SendData(device, resData); err != nil {
-					glog.Debugf(context.Background(), "发送回复失败: %v\n", err)
+			// 如果数据长度小于等于头部长度，则初始化协议处理器
+			fmt.Println(fmt.Sprintf("data len: %d, header len: %d", n, s.packetConfig.HeaderLength))
+			if n <= s.packetConfig.HeaderLength {
+				s.protocolHandler.Init(device, data) // 初始化协议处理器
+				if device != nil {
+					device.OnlineStatus = true
+					device.LastActive = time.Now() // 更新设备最后活跃时间
+					if device.DeviceKey != "" {
+						vars.UpdateDeviceMap(device.DeviceKey, device) // 更新到全局设备列表
+					}
+				}
+			} else {
+				if s.packetConfig.Type != NoHandling {
+					var err error
+					data, err = s.readPacket(reader)
+					if err != nil {
+						if err != io.EOF {
+							glog.Debugf(context.Background(), "读取错误: %v\n", err)
+						}
+						continue
+					}
+				}
+
+				device.LastActive = time.Now()
+				resData, err := s.handleReceiveData(device, data)
+				if err != nil {
+					glog.Debugf(context.Background(), "处理数据错误: %v\n", err)
+					continue
+				}
+
+				if resData != nil {
+					if err := s.SendData(device, resData); err != nil {
+						glog.Debugf(context.Background(), "发送回复失败: %v\n", err)
+					}
 				}
 			}
 		}

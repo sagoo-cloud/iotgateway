@@ -1,19 +1,10 @@
 package network
 
-// PacketHandlingType 定义了处理粘包的方法类型
-type PacketHandlingType int
+import "github.com/sagoo-cloud/iotgateway/conf"
 
 const (
-	NoHandling PacketHandlingType = iota
-	FixedLength
-	HeaderBodySeparate
-	Delimiter
+	NoHandling         conf.PacketHandlingType = iota
+	FixedLength                                // 定长
+	HeaderBodySeparate                         // 头部+体
+	Delimiter                                  // 分隔符
 )
-
-// PacketConfig 定义了处理粘包的配置
-type PacketConfig struct {
-	Type         PacketHandlingType
-	FixedLength  int    // 用于 FixedLength 类型
-	HeaderLength int    // 用于 HeaderBodySeparate 类型
-	Delimiter    string // 用于 Delimiter 类型
-}

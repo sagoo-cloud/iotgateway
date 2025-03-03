@@ -22,6 +22,18 @@ type GatewayServerConfig struct {
 	Description  string        `json:"description"`  // 网关系统描述
 	DeviceType   string        `json:"deviceType"`   // 网关系统类型
 	Manufacturer string        `json:"manufacturer"` // 网关系统厂商
+	PacketConfig PacketConfig  `json:"packetConfig"`
+}
+
+// PacketHandlingType 定义了处理粘包的方法类型
+type PacketHandlingType int
+
+// PacketConfig 定义了处理粘包的配置
+type PacketConfig struct {
+	Type         PacketHandlingType
+	FixedLength  int    // 用于 FixedLength 类型
+	HeaderLength int    // 用于 HeaderBodySeparate 类型
+	Delimiter    string // 用于 Delimiter 类型
 }
 
 type MqttConfig struct {

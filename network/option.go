@@ -1,6 +1,9 @@
 package network
 
-import "time"
+import (
+	"github.com/sagoo-cloud/iotgateway/conf"
+	"time"
+)
 
 // Option 定义了服务器配置的选项函数类型
 type Option func(*BaseServer)
@@ -27,7 +30,7 @@ func WithCleanupInterval(interval time.Duration) Option {
 }
 
 // WithPacketHandling 设置粘包处理选项
-func WithPacketHandling(config PacketConfig) Option {
+func WithPacketHandling(config conf.PacketConfig) Option {
 	return func(s *BaseServer) {
 		s.packetConfig = config
 	}

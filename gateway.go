@@ -109,7 +109,7 @@ func (gw *Gateway) Start() {
 			network.WithTimeout(1*time.Minute),
 			network.WithProtocolHandler(gw.Protocol),
 			network.WithCleanupInterval(5*time.Minute),
-			network.WithPacketHandling(network.PacketConfig{Type: network.Delimiter, Delimiter: "\r\n"}),
+			network.WithPacketHandling(gw.options.GatewayServerConfig.PacketConfig),
 		)
 		glog.Infof(ctx, "%s started Tcp listening on %v", name, gw.options.GatewayServerConfig.Addr)
 		// 启动 TCP 服务器

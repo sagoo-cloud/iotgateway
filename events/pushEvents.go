@@ -171,8 +171,8 @@ func pushSetResDataToMQTT(e event.Event) (err error) {
 
 		//推送数据到mqtt
 		topic := msg.Topic + "_reply"
-
-		glog.Debug(context.Background(), "设备Key：%v，推送【属性设置应答数据】到MQTT服务：%v", deviceKey, mqData)
+		glog.Debugf(context.Background(), "向平推送属性设置应答数据Topic", topic)
+		glog.Debugf(context.Background(), "设备Key：%v，推送【属性设置应答数据】到MQTT服务：%v", deviceKey, mqData)
 		outData, err := json.Marshal(mqData)
 		if err != nil {
 			log.Debug("属性设置响应序列化失败：", err.Error())

@@ -4,16 +4,21 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"os"
+	"time"
+
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/sagoo-cloud/iotgateway/conf"
 	"github.com/sagoo-cloud/iotgateway/log"
-	"os"
-	"time"
 )
 
 const (
 	propertyTopic = "/sys/%s/%s/thing/event/property/pack/post"
 	serviceTopic  = "/sys/+/%s/thing/service/#"
+)
+
+var (
+	reconnectManager *ReconnectManager
 )
 
 // getMqttClientConfig 获取mqtt客户端配置
@@ -34,27 +39,36 @@ func getMqttClientConfig(cf conf.MqttConfig) (connOpts *mqtt.ClientOptions, err 
 	}
 
 	connOpts.SetKeepAlive(cf.KeepAliveDuration * time.Second)
-	connOpts.OnConnect = connectHandler            // 连接成功回调
-	connOpts.OnConnectionLost = connectLostHandler // 连接断开回调
-	connOpts.SetAutoReconnect(true)                // 设置自动重连
+	connOpts.SetConnectTimeout(time.Second * 10)
+	connOpts.SetMaxReconnectInterval(time.Minute * 5)
+	connOpts.SetAutoReconnect(true)
 	connOpts.SetConnectRetryInterval(time.Second * 5)
 
-	connOpts.OnReconnecting = func(c mqtt.Client, o *mqtt.ClientOptions) {
-		log.Debug("尝试重新连接mqtt服务中...")
-		c.Connect()
+	// 连接成功回调
+	connOpts.OnConnect = func(client mqtt.Client) {
+		log.Debug("MQTT服务连接成功")
+		if reconnectManager != nil {
+			reconnectManager.currentRetry = 0
+			// 连接成功后，启动重连循环以确保连接持续
+			reconnectManager.StartReconnectLoop()
+		}
+	}
+
+	// 连接断开回调
+	connOpts.OnConnectionLost = func(client mqtt.Client, err error) {
+		log.Debug("MQTT服务连接已断开: %v", err)
+		if reconnectManager != nil {
+			// 连接断开时，确保重连循环正在运行
+			reconnectManager.StartReconnectLoop()
+		}
+	}
+
+	// 重连回调
+	connOpts.OnReconnecting = func(client mqtt.Client, o *mqtt.ClientOptions) {
+		log.Debug("正在尝试重新连接MQTT服务...")
 	}
 
 	return
-}
-
-// connectHandler 连接成功回调
-var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-	log.Debug("连接MQTT服务成功")
-}
-
-// connectLostHandler 连接断开回调
-var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
-	log.Debug("MQTT服务连接已断开 %v\n", err)
 }
 
 // NewTlsConfig 生成tls配置

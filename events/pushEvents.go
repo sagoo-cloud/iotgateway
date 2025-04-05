@@ -154,6 +154,7 @@ func pushServiceResDataToMQTT(e event.Event) (err error) {
 func pushSetResDataToMQTT(e event.Event) (err error) {
 	deviceKey := gconv.String(e.Data()["DeviceKey"])
 	replyData := e.Data()["ReplyData"]
+	glog.Debugf(context.Background(), "【IotGateway】推送属性设置响应数据到mqtt服务：设备：%s,数据：%v", deviceKey, replyData)
 	replyDataMap := make(map[string]interface{})
 	if replyData != nil {
 		replyDataMap = gconv.Map(replyData)
@@ -161,7 +162,7 @@ func pushSetResDataToMQTT(e event.Event) (err error) {
 
 	msg, err := vars.GetUpMessageMap(deviceKey)
 	if msg.MessageID != "" && err == nil {
-		glog.Debug(context.Background(), "==5555==监听回复信息====", msg)
+		glog.Debug(context.Background(), "【IotGateway】 监听回复信息", msg)
 		mqData := mqttProtocol.ServiceCallOutputRes{}
 		mqData.Id = msg.MessageID
 		mqData.Code = 200
@@ -171,22 +172,21 @@ func pushSetResDataToMQTT(e event.Event) (err error) {
 
 		//推送数据到mqtt
 		topic := msg.Topic + "_reply"
-		glog.Debugf(context.Background(), "向平推送属性设置应答数据Topic", topic)
-		glog.Debugf(context.Background(), "设备Key：%v，推送【属性设置应答数据】到MQTT服务：%v", deviceKey, mqData)
 		outData, err := json.Marshal(mqData)
 		if err != nil {
-			log.Debug("属性设置响应序列化失败：", err.Error())
+			glog.Debugf(context.Background(), "【IotGateway】属性设置响应序列化失败：%v", err.Error())
 			return err
 		}
+		glog.Debugf(context.Background(), "【IotGateway】向平推送属性设置应答数据Topic:%s", topic)
+		glog.Debugf(context.Background(), "【IotGateway】设备Key：%v，推送【属性设置应答数据】到MQTT服务：%v", deviceKey, string(outData))
 
-		log.Debug("属性设置响应：", mqData)
-		log.Debug("属性设置响应topic：", topic)
 		err = mqttClient.Publish(topic, outData)
 		if err != nil {
-			log.Debug("属性设置响应失败：", err.Error())
+			log.Debug("【IotGateway】向mqtt服务推送属性设置响应失败：", err.Error())
 		} else {
-			log.Debug("属性设置响应成功")
+			log.Debug("【IotGateway】向mqtt服务推送属性设置响应成功")
 		}
+		vars.DeleteFromUpMessageMap(deviceKey)
 	}
 	return
 }

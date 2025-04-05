@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/os/glog"
-	"github.com/sagoo-cloud/iotgateway/log"
 	"github.com/sagoo-cloud/iotgateway/vars"
 )
 
@@ -12,11 +11,10 @@ import (
 func PublishData(deviceKey string, payload []byte) (err error) {
 	gateWayProductKey := vars.GatewayServerConfig.ProductKey
 	topic := fmt.Sprintf(propertyTopic, gateWayProductKey, deviceKey)
-	glog.Debug(context.Background(), "属性上报，topic: %s", topic, string(payload))
 	err = Publish(topic, payload)
 	if err != nil {
-		log.Error("publish error: %s", err.Error())
-		return
+		return fmt.Errorf("【IotGateway】publish error: %s", err.Error())
 	}
+	glog.Debugf(context.Background(), "【IotGateway】属性上报，topic: %s,推送的数据：%s", topic, string(payload))
 	return
 }

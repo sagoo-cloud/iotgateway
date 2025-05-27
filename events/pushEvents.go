@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/glog"
@@ -15,6 +16,7 @@ import (
 	"github.com/sagoo-cloud/iotgateway/consts"
 	"github.com/sagoo-cloud/iotgateway/lib"
 	"github.com/sagoo-cloud/iotgateway/log"
+	"github.com/sagoo-cloud/iotgateway/model"
 	"github.com/sagoo-cloud/iotgateway/mqttClient"
 	"github.com/sagoo-cloud/iotgateway/mqttProtocol"
 	"github.com/sagoo-cloud/iotgateway/vars"
@@ -118,7 +120,20 @@ func pushServiceResDataToMQTT(e event.Event) (err error) {
 		replyDataMap = gconv.Map(replyData)
 	}
 
-	msg, err := vars.GetUpMessageMap(deviceKey)
+	// 优先尝试使用指定的消息ID（如果提供的话）
+	var msg model.UpMessage
+	if messageId := gconv.String(e.Data()["MessageID"]); messageId != "" {
+		// 使用复合键精确匹配
+		msg, err = vars.GetUpMessageByCompositeKey(deviceKey, messageId)
+		if err != nil {
+			// 如果复合键没找到，fallback到原有方式
+			msg, err = vars.GetUpMessageMap(deviceKey)
+		}
+	} else {
+		// 使用原有方式获取消息（保持向下兼容）
+		msg, err = vars.GetUpMessageMap(deviceKey)
+	}
+
 	if msg.MessageID != "" && err == nil {
 		log.Debug("==5555==监听回复信息====", msg)
 		mqData := mqttProtocol.ServiceCallOutputRes{}
@@ -145,6 +160,13 @@ func pushServiceResDataToMQTT(e event.Event) (err error) {
 			log.Debug("发送服务回调响应失败：", err.Error())
 		} else {
 			log.Debug("发送服务回调响应成功")
+			// ✅ 添加缓存清理，防止内存泄漏
+			if messageId := gconv.String(e.Data()["MessageID"]); messageId != "" {
+				vars.DeleteFromUpMessageMapByCompositeKey(deviceKey, messageId)
+			} else {
+				// 兼容原有方式
+				vars.DeleteFromUpMessageMap(deviceKey)
+			}
 		}
 	}
 	return
@@ -160,7 +182,20 @@ func pushSetResDataToMQTT(e event.Event) (err error) {
 		replyDataMap = gconv.Map(replyData)
 	}
 
-	msg, err := vars.GetUpMessageMap(deviceKey)
+	// 优先尝试使用指定的消息ID（如果提供的话）
+	var msg model.UpMessage
+	if messageId := gconv.String(e.Data()["MessageID"]); messageId != "" {
+		// 使用复合键精确匹配
+		msg, err = vars.GetUpMessageByCompositeKey(deviceKey, messageId)
+		if err != nil {
+			// 如果复合键没找到，fallback到原有方式
+			msg, err = vars.GetUpMessageMap(deviceKey)
+		}
+	} else {
+		// 使用原有方式获取消息（保持向下兼容）
+		msg, err = vars.GetUpMessageMap(deviceKey)
+	}
+
 	if msg.MessageID != "" && err == nil {
 		glog.Debug(context.Background(), "【IotGateway】 监听回复信息", msg)
 		mqData := mqttProtocol.ServiceCallOutputRes{}
@@ -186,7 +221,14 @@ func pushSetResDataToMQTT(e event.Event) (err error) {
 		} else {
 			log.Debug("【IotGateway】向mqtt服务推送属性设置响应成功")
 		}
-		vars.DeleteFromUpMessageMap(deviceKey)
+
+		// ✅ 优化缓存清理逻辑
+		if messageId := gconv.String(e.Data()["MessageID"]); messageId != "" {
+			vars.DeleteFromUpMessageMapByCompositeKey(deviceKey, messageId)
+		} else {
+			// 兼容原有方式
+			vars.DeleteFromUpMessageMap(deviceKey)
+		}
 	}
 	return
 }

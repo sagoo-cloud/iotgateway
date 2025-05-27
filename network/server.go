@@ -3,13 +3,14 @@ package network
 import (
 	"context"
 	"errors"
+	"net"
+	"sync"
+	"time"
+
 	"github.com/gogf/gf/v2/os/glog"
 	"github.com/sagoo-cloud/iotgateway/conf"
 	"github.com/sagoo-cloud/iotgateway/model"
 	"github.com/sagoo-cloud/iotgateway/vars"
-	"net"
-	"sync"
-	"time"
 )
 
 // NetworkServer 接口定义了网络服务器的通用方法
@@ -67,6 +68,11 @@ func (s *BaseServer) handleDisconnect(device *model.Device) {
 	if _, ok := s.devices.LoadAndDelete(device.ClientID); ok {
 		device.OnlineStatus = false
 		glog.Debugf(context.Background(), "设备 %s 离线, %s\n", device.DeviceKey, device.ClientID)
+
+		// ✅ 清理设备相关的所有消息缓存，防止内存泄漏
+		if device.DeviceKey != "" {
+			vars.ClearDeviceMessages(device.DeviceKey)
+		}
 	}
 }
 

@@ -3,6 +3,9 @@ package iotgateway
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gogf/gf/v2/os/glog"
 	"github.com/gogf/gf/v2/util/gconv"
@@ -12,8 +15,6 @@ import (
 	"github.com/sagoo-cloud/iotgateway/model"
 	"github.com/sagoo-cloud/iotgateway/mqttProtocol"
 	"github.com/sagoo-cloud/iotgateway/vars"
-	"strings"
-	"time"
 )
 
 // SubscribeSetEvent  订阅平台的属性设置，需要在有新设备接入时调用
@@ -60,9 +61,16 @@ var onSetMessage mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message
 		up.SendTime = time.Now().UnixNano() / 1e9
 		up.MethodName = method[2]
 		up.Topic = msg.Topic()
+
+		// ✅ 优化消息缓存存储，支持并发消息处理
 		vars.UpdateUpMessageMap(deviceKey, up)
+
+		// 验证缓存存储（可选，用于调试）
 		//ra, ee := vars.GetUpMessageMap(deviceKey)
 		//glog.Debug(ctx, "【IotGateway】验证是否将接收到的属性设置数据进行了缓存：MessageHandler", ra, ee)
+
+		// 在事件参数中添加消息ID，便于后续精确匹配
+		data.Params["MessageID"] = data.Id
 		event.MustFire(method[2], data.Params)
 	}
 }
